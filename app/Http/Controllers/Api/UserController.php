@@ -5,52 +5,26 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Mail\EmailVerificationMail;
 use App\Models\Device;
+use App\Models\Location;
 use App\Models\User;
 use App\Utilities\AppHelpers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
+use mysql_xdevapi\Exception;
 use Nette\Schema\ValidationException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UserController extends Controller
 {
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function login(Request $request)
-    {
-        try {
-            //return $request;
-            $request->validate([
-                'email' => 'required|string|email',
-                'password' => 'required|string',
-            ]);
-            $credentials = $request->only('email', 'password');
-            if ( ! $token = JWTAuth::attempt($credentials)) {
-                return AppHelpers::apiResponse([], true, 401, 'Unauthorized');
-            }
-            $user = Auth::user();
-            return AppHelpers::apiResponse([
-                'user' => $user,
-                'authorization' => [
-                    'token' => $token,
-                    'type' => 'bearer',
-                    'expires-in'=>JWTAuth::factory()->getTTL()//expires in 1hr. (60min)
-                ]
-            ]);
-        } catch (ValidationException $e) {
-            return AppHelpers::apiResponse([], true, 422, 'Validation error', $e->errors());
 
-        } catch (\Throwable $error) {
-            return AppHelpers::apiResponse([], true, 500, $error->getMessage());
-        }
-    }
 
     /**
+     * Sign-up with user data
      * @param Request $request
      * @return JsonResponse
      */
@@ -97,28 +71,44 @@ class UserController extends Controller
     }
 
     /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function login(Request $request)
+    {
+        try {
+            //return $request;
+            $request->validate([
+                'email' => 'required|string|email',
+                'password' => 'required|string',
+            ]);
+            $credentials = $request->only('email', 'password');
+            if (!$token = JWTAuth::attempt($credentials)) {
+                return AppHelpers::apiResponse([], true, 401, 'Unauthorized');
+            }
+            $user = Auth::user();
+            return AppHelpers::apiResponse([
+                'user' => $user,
+                'authorization' => [
+                    'token' => $token,
+                    'type' => 'bearer',
+                    'expires-in' => JWTAuth::factory()->getTTL()//expires in 1hr. (60min)
+                ]
+            ]);
+        } catch (ValidationException $e) {
+            return AppHelpers::apiResponse([], true, 422, 'Validation error', $e->errors());
+
+        } catch (\Throwable $error) {
+            return AppHelpers::apiResponse([], true, 500, $error->getMessage());
+        }
+    }
+
+    /**
      * @return JsonResponse
      */
     public function logout()
     {
         Auth::logout();
         return AppHelpers::apiResponse([]);
-    }
-
-    /**
-     * @return mixed
-     */
-    public function dashboard()
-    {
-
-            $devices = Device::where('user_id', auth()->id())
-            ->with('locations')->get();
-
-            if (!$devices) {
-                return  AppHelpers::apiResponse([], true, 404 ,'No Device found');
-            }
-
-            return AppHelpers::apiResponse($devices);
-
     }
 }

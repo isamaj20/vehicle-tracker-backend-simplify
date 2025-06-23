@@ -6,92 +6,104 @@ use App\Http\Controllers\Controller;
 use App\Models\Device;
 use App\Models\DeviceCommand;
 use App\Models\Location;
-use App\Utilities\AppHelpers;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class DeviceController extends Controller
 {
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function addDevice(Request $request)
-    {
-        try {
-            $request->validate([
-                'device_id' => 'required|string|unique:devices,device_id',
-                'device_name' => ['required', 'string',
-                    Rule::unique('devices')->where(function ($query) use ($request) {
-                        return $query->where('user_id', auth()->id());
-                    }),
-                ],
-                'sim_number' => 'required|string|max:14',
-            ]);
-
-            $device = Device::create([
-                'device_id' => $request->device_id,
-                'device_name' => $request->device_name,
-                'user_id' => auth()->id(),
-                'sim_number' => $request->sim_number,
-                'ignition' => true,
-            ]);
-            return AppHelpers::apiResponse($device, false, 200, 'Successfully added ' . $request['device_name']);
-
-        } catch (ValidationException $e) {
-            return AppHelpers::apiResponse(
-                [],
-                true,
-                422,
-                'Validation error',
-                $e->errors()  // returns the detailed errors as array
-            );
-
-        } catch (\Throwable $error) {
-            return AppHelpers::apiResponse([], true, 500, $error->getMessage());
-        }
-    }
 
     /**
+     * Receives report from Device and store in the server
      * @param Request $request
      * @return mixed
      */
-    public function report(Request $request)
+    public function updateReport(Request $request)
     {
         try {
-            $data = $request->validate([
+            $request->validate([
                 'device_id' => 'required|string',
                 'lat' => 'required|numeric',
                 'lon' => 'required|numeric',
                 'speed' => 'nullable|numeric',
-                'ignition' => 'required|boolean',
+                'ignition' => 'required|string',
                 'timestamp' => 'nullable'
             ]);
-            $device = Device::firstOrCreate(
-                ['device_id' => $data->device_id, 'user_id' => auth()->id()] // Optional: replace with authenticated user
-            );
+            $device = Device::where('device_id', $request->device_id)
+                ->first();
 
-            $device->update(['ignition' => $data->ignition]);
+            if (!$device) {
+                return response()->json(['status' => 'Device not found']);
+            }
+            // Get the latest saved location for this device
+            $lastLocation = Location::where('device_id', $request->device_id)
+                ->latest()
+                ->first();
+            $shouldSave = false;
+            if (!$lastLocation) {
+                // No previous location — save the first one
+                $shouldSave = true;
+            } else {
+                $timeDiff = now()->diffInSeconds($lastLocation->created_at);
+                $distance = $this->haversine(
+                    $lastLocation->lat,
+                    $lastLocation->lon,
+                    $request->lat,
+                    $request->lon
+                );
 
-            Location::create([
-                'device_id' => $data->device_id,
-                'lat' => $data->lat,
-                'lon' => $data->lon,
-                'speed' => $data->speed,
-                'recorded_at' => now(),
-            ]);
+                // Save if location changed significantly OR 1+ minute passed
+                if ($timeDiff > 60 || $distance > 0.05) { // 0.05 km = 50 meters
+                    $shouldSave = true;
+                }
+            }
 
+            if ($shouldSave) {
+                $ignition = false;
+                if ($request->ignition == 'ON') {
+                    $ignition = true;
+                }
+                $device->update(['ignition' => $ignition]);
+
+                Location::create([
+                    'device_id' => $request->device_id,
+                    'lat' => $request->lat,
+                    'lon' => $request->lon,
+                    'speed' => $request->speed,
+                    'recorded_at' => now(),
+                ]);
+            }
             return response()->json(['status' => 'success']);
+
         } catch (ValidationException $e) {
 
-            return response()->json('Validation error: ');
+            return response()->json(['status' => $e->errors()]);
 
         } catch (\Throwable $error) {
-            return AppHelpers::apiResponse([], true, 500, $error->getMessage());
+            return response()->json(['status' => $error->getMessage()]);
         }
+    }
+
+    /**
+     * @param $lat1
+     * @param $lon1
+     * @param $lat2
+     * @param $lon2
+     * @return float|int
+     */
+    private function haversine($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371; // in km
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadius * $c; // distance in km
     }
 
     /**
@@ -112,24 +124,4 @@ class DeviceController extends Controller
         return response()->json(['command' => $command->command]);
     }
 
-    /**
-     * @param Request $request
-     * @param $device_id
-     * @return mixed
-     */
-    public function sendCommand(Request $request, $device_id)
-    {
-        $request->validate([
-            'command' => 'required|string|in:#KILL,#START,#STATUS,#INTERVAL',
-        ]);
-
-        $device = Device::where('device_id', $device_id)->first();
-        if (!$device) return response()->json(['error' => 'Device not found'], 404);
-
-        $device->commands()->create([
-            'command' => strtoupper($request->command),
-        ]);
-
-        return response()->json(['status' => 'command queued']);
-    }
 }
