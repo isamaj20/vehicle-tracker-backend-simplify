@@ -26,3 +26,6 @@ Route::controller(DeviceController::class)->group(function () {
     Route::post('/device', 'updateReport');// DEVICE: send device report to server
     Route::get('/device/command/{device_id}', 'command');// DEVICE: get command from server
 });
+Route::get('/ping', function () {
+    return response()->json(['status' => 'alive']);
+});
