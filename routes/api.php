@@ -19,13 +19,18 @@ Route::controller(UserDeviceController::class)
         Route::post('/device/command/{device_id}', 'sendCommand');//FRONTEND: send command from server
         Route::get('/device/{device_id}', 'getDevice');//returns a single device
         Route::patch('/device/{device_id}');//update a device
-        Route::get('/location/device/{device_id}','getLocation');//get device location coordinates
-        Route::delete('/device/{device_id}','destroy'); //remove device
+        Route::get('/location/device/{device_id}', 'getLocation');//get device location coordinates
+        Route::delete('/device/{device_id}', 'destroy'); //remove device
     });
 Route::controller(DeviceController::class)->group(function () {
     Route::post('/device', 'updateReport');// DEVICE: send device report to server
     Route::get('/device/command/{device_id}', 'command');// DEVICE: get command from server
 });
+
+
+///////////////////////////////////////////////////TESTING APPLICATION///////////////////////////////////////////////////
+//.......................................................................................................................
+
 Route::get('/ping', function () {
     return response()->json(['status' => 'alive']);
 });
