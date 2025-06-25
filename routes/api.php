@@ -29,3 +29,6 @@ Route::controller(DeviceController::class)->group(function () {
 Route::get('/ping', function () {
     return response()->json(['status' => 'alive']);
 });
+Route::get('/fail-test', function () {
+    abort(500, 'This is a forced error');
+});
