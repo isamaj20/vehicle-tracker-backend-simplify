@@ -1,61 +1,104 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# IoT Vehicle Tracker Backend – Laravel API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A simplified Laravel-based backend system for real-time GPS vehicle tracking and remote ignition control using microcontroller modules (e.g., Arduino) connected via GSM/GPRS.
 
-## About Laravel
+> This is a public-safe version with mock data and generic endpoints. Production implementation includes additional security and device-specific configurations.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Receive location data (lat, lng, speed, ignition status) via GSM or HTTP
+- Store and timestamp GPS logs to database
+- Remote kill switch command endpoint (e.g., `#START`, `#STOP`, `#MODE`)
+- JWT-secured API for device-server communication
+- Admin dashboard or mobile client support (optional)
+- Laravel Scheduler-ready for periodic status updates
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Tech Stack
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- Laravel 12 (REST API)
+- PHP 8.x
+- MySQL
+- JWT Authentication
+- Postman (for API testing)
+- Arduino, GSM modules, Relay Module, GPS Module (Ardunino Uno, SIM800L, etc.) – external hardware
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## API Endpoints (Sample)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/device` | Device sends location, speed, ignition status|
+| `POST` | `/api/device/command/{device_id}` | Server sends remote command to device |
+| `GET`  | `/api/location/device/{device_id}` | Fetch recent GPS logs for a device |
+| `POST` | `/api/login` | JWT auth for user login to access dashboard and other features  |
 
-### Premium Partners
+> Example device report payload:
+```json
+{
+  "device_id": "device_001",
+  "lat": "7.3934",
+  "lng": "3.8948",
+  "speed": "45.2",
+  "ignition": "on"
+}
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Setup Instructions
+1. Clone the repository  
+   ```bash
+   git clone https://github.com/isamaj20/vehicle-tracker-backend-simplify.git
+   ```
+   
+2. Install dependencies:
+    ```bash
+     composer install
+    ```
+3. Create .env file:
+   ```bash
+    cp .env.example .env
+    php artisan key:generate
+   ```
+  
+4. Configure DB credentials in `.env`
 
-## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+5. Run migrations:
+   ```bash
+   php artisan migrate
+   ```
 
-## Code of Conduct
+6. Launch the dev server:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+   ```bash
+   php artisan server
+   ```
+   
+## Folder Structure
+  
+   ```swift
+   /app/Http/Controllers/Api/   → API logic
+   /app/Http/Middleware/        → Middleware for endpoint access logic
+   /app/Utilities/              → API response helper class
+   /app/Models/                 → Device, User,  DeviceCommand, Location Nodels
+   /routes/api.php              → API routes  
+   /database/migrations/        → DB schema   
+   .env.example                 → Environment template
+   ```
+   
+## Notes
+    - Replace production secrets with mock data
+	- Ensure API keys and SIM IDs are excluded
+	- Code is educational and demo-ready; use at your discretion
+	
+## Author
+John Isama – [LinkedIn](https://www.linkedin.com/in/isama-john-adeyi/) | [GitHub](https://github.com/isamaj20/)
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Open-source for learning and demonstration purposes.
+Feel free to fork and adapt with credit.

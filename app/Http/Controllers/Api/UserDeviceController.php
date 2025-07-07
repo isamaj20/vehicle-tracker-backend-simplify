@@ -43,7 +43,7 @@ class UserDeviceController extends Controller
     public function sendCommand(Request $request, $device_id)
     {
         $request->validate([
-            'command' => 'required|string|in:#KILL,#START,#STATUS,#INTERVAL',
+            'command' => 'required|string|in:#STOP,#START,#INTERVAL',
         ]);
 
         $device = Device::where('device_id', $device_id)->first();
