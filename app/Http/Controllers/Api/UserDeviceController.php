@@ -100,65 +100,6 @@ class UserDeviceController extends Controller
         }
     }
 
-    /**
-     * Get device with the passed ID.
-     * @param $device_id
-     * @return JsonResponse
-     */
-    public function getDevice($device_id)
-    {
-        $device = Device::where('device_id',$device_id)->first();
-        if (!$device) {
-            return AppHelpers::apiResponse([], true, 404, 'Device not found');
-        }
-        return AppHelpers::apiResponse($device);
-    }
-
-    /**
-     * Get device with the passed ID,
-     * update the device with the provided details
-     * @param Request $request
-     * @param $device_id
-     * @return JsonResponse
-     */
-    public function updateDevice(Request $request, $device_id)
-    {
-
-        DB::beginTransaction();
-        try {
-            $request->validate([
-                // 'device_id' => 'required|string|unique:devices,device_id',
-                'device_name' => ['required', 'string',
-                    Rule::unique('devices')->where(function ($query) use ($request) {
-                        return $query->where('user_id', auth()->id());
-                    }),
-                ],
-                'sim_number' => 'required|string|max:14',
-                'device_category_id' => 'string|exists:device_categories,id'
-            ]);
-            $device = Device::find($device_id);
-            if (!$device) {
-                return AppHelpers::apiResponse([], true, 404, 'Device not found');
-            }
-
-            $data = $request->only(['device_name', 'sim_number', 'device_category_id']);
-
-            //update device details
-            $device = Device::where('device_id', $device_id)->update($data);
-
-            DB::commit();
-            return AppHelpers::apiResponse($device);
-
-        } catch (ValidationException $e) {
-
-            DB::rollBack();
-            return AppHelpers::apiResponse([], true, 422, 'Validation error', $e->errors());
-
-        } catch (\Throwable $error) {
-            DB::rollBack();
-            return AppHelpers::apiResponse([], true, 500, $error->getMessage());
-        }
-    }
 
     /**
      * Get device coordinates

@@ -17,8 +17,6 @@ Route::controller(UserDeviceController::class)
         Route::get('/dashboard', 'dashboard');//FRONTEND: get dashboard report from server
         Route::post('/new-device', 'addDevice');//add device
         Route::post('/device/command/{device_id}', 'sendCommand');//FRONTEND: send command from server
-        Route::get('/device/{device_id}', 'getDevice');//returns a single device
-        Route::patch('/device/{device_id}');//update a device
         Route::get('/location/device/{device_id}', 'getLocation');//get device location coordinates
         Route::delete('/device/{device_id}', 'destroy'); //remove device
     });

@@ -26,7 +26,7 @@ class DeviceSeeder extends Seeder
             'device_id' => 'DEV12345',
             'device_name' =>'406 Tracker',
             'user_id' => $this->userId,
-            'sim_number' => '+2348067203944',
+            'sim_number' => '+23480123456',
             'ignition' => true,
         ]);
 
@@ -44,7 +44,7 @@ class DeviceSeeder extends Seeder
         // Add a queued command
         DeviceCommand::create([
             'device_id' => $device->device_id,
-            'command' => '#KILL',
+            'command' => '#STOP',
             'executed' => false,
         ]);
     }
